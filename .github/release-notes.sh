@@ -62,7 +62,14 @@ section "Fixes" "$fixes"
 section "Performance" "$perf"
 
 if [ -z "$breaking$features$fixes$perf" ]; then
-	printf 'Maintenance only — no user-visible changes.\n\n'
+	# The first release is cut by hand out of whatever history exists, which
+	# predates the convention and so has nothing to summarise. That is not the
+	# same thing as a release that changed nothing.
+	if [ -z "$last" ]; then
+		printf 'First release.\n\n'
+	else
+		printf 'Maintenance only — no user-visible changes.\n\n'
+	fi
 fi
 
 # GITHUB_REPOSITORY is set in Actions; the remote is the fallback for a run
