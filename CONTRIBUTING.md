@@ -17,8 +17,13 @@ go vet ./... && go test -race ./...
 .github/next-version.sh       # the version your branch would release
 ```
 
-CI runs exactly these, on Linux, macOS and Windows, and cross-compiles all six
-release targets. Nothing merges until they pass.
+CI runs exactly these on every pull request, on Linux, macOS and Windows, and
+nothing merges until they pass. It only ever reports — it will not reformat
+your tree or rewrite `go.mod` behind you, so anything it complains about is
+something you can reproduce and fix in one command.
+
+It does not run again on the merge commit: main is what CI has just approved,
+and the release workflow re-runs the gate itself before it tags anything.
 
 ## Commit messages
 
@@ -126,7 +131,9 @@ gh api -X PATCH repos/orkwitzel/xtract \
 
 ### Required checks
 
-Merging should be blocked until these pass. Once, from a machine with `gh`:
+`main` is protected and these five have to pass before anything merges. It is
+already set; this is the command that set it, for the record and for reapplying
+it if the job names ever change:
 
 ```bash
 gh api -X PUT repos/orkwitzel/xtract/branches/main/protection --input - <<'JSON'
@@ -137,8 +144,7 @@ gh api -X PUT repos/orkwitzel/xtract/branches/main/protection --input - <<'JSON'
       "test (ubuntu-latest)",
       "test (macos-latest)",
       "test (windows-latest)",
-      "format and modules",
-      "build every release target",
+      "format",
       "commit messages"
     ]
   },
@@ -149,8 +155,9 @@ gh api -X PUT repos/orkwitzel/xtract/branches/main/protection --input - <<'JSON'
 JSON
 ```
 
-Without this the workflows still run and still go red — they just do not stop
-anyone. The release workflow re-runs the test gate itself for that reason.
+Admins are exempt (`enforce_admins: false`), so there is still a way to push a
+fix by hand when something is properly stuck. Nothing else relies on that: the
+release workflow re-runs the gate itself before it tags anything.
 
 ## How a release happens
 
@@ -202,8 +209,7 @@ get the same answer CI does.
 
 | | |
 |---|---|
-| `.github/workflows/ci.yml` | tests on Linux, macOS and Windows; gofmt; `go mod tidy`; all six cross-compiles |
-| `.github/workflows/commits.yml` | the commit and pull request title check |
+| `.github/workflows/ci.yml` | every pull request: tests on Linux, macOS and Windows, gofmt, and the commit and title check |
 | `.github/workflows/release.yml` | version, gate, six binaries, tagged release |
 | `.github/check-commits.sh` | the format check |
 | `.github/next-version.sh` | commits → the next version |
