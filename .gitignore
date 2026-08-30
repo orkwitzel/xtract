@@ -1,0 +1,22 @@
+# Built binary
+/xtract
+
+# Go build and test output
+*.exe
+*.test
+*.out
+*.prof
+coverage.txt
+
+# Where the sample archive extracts to; regenerate with testdata/make.sh
+/testdata/sample/
+
+# Output of testdata/random.sh, and where it extracts to
+/random.*
+/random/
+
+# Editors
+.idea/
+.vscode/
+*.swp
+.DS_Store
