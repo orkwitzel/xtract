@@ -17,6 +17,9 @@ go test ./internal/extractor -run TestRecursive -v
 ./testdata/make.sh              # (re)build the fixed sample archive
 ./testdata/random.sh -d 5       # a random tree, as deep and wide as you want
 ./xtract -v testdata/sample.zip # try it; -v gives plain output, no TUI
+
+.github/check-commits.sh        # commit subjects, the way CI checks them
+.github/next-version.sh         # the version your commits would release
 ```
 
 `testdata/make.sh` needs `zip tar gzip bzip2 xz zstd 7z` on PATH. The archive it
@@ -129,6 +132,44 @@ mholt/archives; provenance is in the README there).
 
 Run with `-race`. The queue, the parallel zip path and the reporter globals are
 where races hide, and they will not show up otherwise.
+
+## Commits and releases
+
+Commit subjects are [Conventional Commits](https://www.conventionalcommits.org)
+and the type is not decoration — it is what picks the next version:
+
+```
+feat: ...                                    minor
+fix: ...   perf: ...   revert: ...           patch
+feat!: ...  or a BREAKING CHANGE: footer     major (minor while below v1.0.0)
+docs: test: refactor: style: build: ci: chore:    nothing
+```
+
+Subjects are imperative, at most 72 characters, no full stop, with an optional
+scope in parentheses — `fix(walk): stop deleting a half-extracted archive`.
+Trailers such as `Co-Authored-By:` sit at the bottom after a blank line and are
+ignored by all of the above, so add them freely.
+
+Check your work before pushing; CI runs the same two scripts and will not tell
+you anything you could not have found out first:
+
+```bash
+.github/check-commits.sh      # every commit not yet on main
+.github/next-version.sh       # what merging them would release
+```
+
+Merging to main runs the release workflow: it works out the version from the
+commits, re-runs `go vet` and `go test -race`, cross-compiles six binaries
+(linux, darwin and windows × amd64 and arm64) with the version baked in, and
+publishes a tagged GitHub release. A branch of nothing but refactors and docs
+merges without releasing anything, which is the intended outcome.
+
+Under a squash merge **the pull request title becomes the commit message on
+main**, so it is checked against the same rules as the commits and it is what
+decides the version. Write it as carefully as a commit.
+
+`CONTRIBUTING.md` has the full table, the breaking-change rules and what to do
+when a release goes wrong.
 
 ## Style
 

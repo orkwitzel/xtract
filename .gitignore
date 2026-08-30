@@ -1,6 +1,9 @@
 # Built binary
 /xtract
 
+# Release archives, when the release build is run locally
+/dist/
+
 # Go build and test output
 *.exe
 *.test

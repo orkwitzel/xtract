@@ -1,0 +1,46 @@
+name: Commits
+
+# Separate from CI because of `edited`: the pull request title is checked here,
+# and a title fixed after the fact has to be re-checked without cancelling and
+# restarting a full test run.
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commits-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  commits:
+    name: commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # the branch's own commits, and the tags behind them
+
+      - name: Every commit in the pull request
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/check-commits.sh "$BASE..$HEAD"
+
+      # A squash merge throws those subjects away and uses the pull request
+      # title instead, so the title has to hold up on its own.
+      - name: The pull request title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: .github/check-commits.sh -m "$TITLE"
+
+      - name: What merging this would release
+        run: |
+          version=$(.github/next-version.sh)
+          if [ -n "$version" ]; then
+            echo "Merging this would release **$version**." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Nothing here bumps the version, so merging it releases nothing." >> "$GITHUB_STEP_SUMMARY"
+          fi

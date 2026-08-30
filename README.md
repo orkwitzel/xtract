@@ -14,6 +14,17 @@ $ xtract bundle.zip
 
 ## Install
 
+Grab a binary from the [latest release](https://github.com/orkwitzel/xtract/releases/latest)
+— Linux, macOS and Windows, on x86-64 and arm64, one static file with no
+runtime to install:
+
+```
+tar -xzf xtract_1.0.0_linux_amd64.tar.gz xtract && sudo mv xtract /usr/local/bin/
+```
+
+Every release ships `checksums.txt` alongside the archives. Or build it
+yourself:
+
 ```
 go install github.com/orkwitzel/xtract@latest      # or: go build -o xtract .
 ```
@@ -138,6 +149,14 @@ Fixtures for zip, tar and gzip are built in-process, so there are no binary
 blobs to trust. 7z fixtures are generated with the system `7z` when it is
 installed and skipped when it is not. Nothing in Go can write a rar, so
 `internal/extractor/testdata` holds a checked-in two-volume set.
+
+## Contributing
+
+`AGENTS.md` is how the code is put together and what not to break.
+`CONTRIBUTING.md` is the commit format — [Conventional
+Commits](https://www.conventionalcommits.org), where the type of a commit is
+what picks the next version — and how a merge to `main` becomes a tagged
+release with binaries for all six platforms.
 
 ## License
 
