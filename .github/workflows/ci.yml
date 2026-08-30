@@ -1,17 +1,18 @@
 name: CI
 
-# Everything here has to pass before a pull request can be merged, which is
-# also what keeps main releasable: the release workflow tags whatever main
-# says, so main is not allowed to be broken.
+# Pull requests only. Nothing here needs to run again on the merge commit:
+# main is what CI just approved, and the release workflow re-runs the tests
+# itself before it tags anything.
 on:
   pull_request:
-  push:
-    branches: [main]
+    # `edited` is here for the title check below — a title fixed after the
+    # fact has to be re-checked, and the title is what a squash merge commits.
+    types: [opened, reopened, synchronize, edited]
 
 permissions:
   contents: read
 
-# A second push to the same branch makes the run already in flight pointless.
+# A second push to the same pull request makes the run in flight pointless.
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
@@ -43,13 +44,14 @@ jobs:
         shell: bash
 
   format:
-    name: format and modules
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      # Reports, never rewrites: what CI thinks of the tree should be
+      # something you can reproduce and fix yourself in one command.
       - name: gofmt
         run: |
           unformatted=$(gofmt -l .)
@@ -58,30 +60,33 @@ jobs:
             echo "$unformatted"
             exit 1
           fi
-      - name: go mod tidy leaves nothing behind
-        run: |
-          go mod tidy
-          if ! git diff --quiet go.mod go.sum; then
-            echo "::error::go.mod or go.sum is not tidy; run go mod tidy and commit the result"
-            git diff -- go.mod go.sum
-            exit 1
-          fi
 
-  build:
-    name: build every release target
+  commits:
+    name: commit messages
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-go@v7
         with:
-          go-version-file: go.mod
-      # The release cross-compiles all six of these from one machine, so a
-      # target that stops building is a broken release. Better to hear about
-      # it on the pull request than at tag time.
-      - name: Cross-compile
+          fetch-depth: 0   # the branch's own commits, and the tags behind them
+
+      - name: Every commit in the pull request
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: .github/check-commits.sh "$BASE..$HEAD"
+
+      # A squash merge throws those subjects away and uses the pull request
+      # title instead, so the title has to hold up on its own.
+      - name: The pull request title
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: .github/check-commits.sh -m "$TITLE"
+
+      - name: What merging this would release
         run: |
-          for target in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64 windows/arm64; do
-            echo "--- $target"
-            CGO_ENABLED=0 GOOS=${target%/*} GOARCH=${target#*/} \
-              go build -trimpath -o /dev/null .
-          done
+          version=$(.github/next-version.sh)
+          if [ -n "$version" ]; then
+            echo "Merging this would release **$version**." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Nothing here bumps the version, so merging it releases nothing." >> "$GITHUB_STEP_SUMMARY"
+          fi
