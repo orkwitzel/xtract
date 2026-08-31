@@ -55,7 +55,10 @@ func TestViewReflectsCounters(t *testing.T) {
 	m, _ := newModel(nil).Update(tickMsg(time.Now()))
 	view := m.View()
 
-	for _, want := range []string{"8", "13", "xtract", "to go"} {
+	if n := strings.Count(view, "\n"); n > 1 {
+		t.Errorf("view should be a single line, got %d newlines:\n%s", n, view)
+	}
+	for _, want := range []string{"8", "13"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("view is missing %q:\n%s", want, view)
 		}

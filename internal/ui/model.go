@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/charmbracelet/bubbles/progress"
@@ -29,7 +28,6 @@ type doneMsg struct{}
 type interruptMsg struct{}
 
 var (
-	titleStyle  = lipgloss.NewStyle().Bold(true)
 	dimStyle    = lipgloss.NewStyle().Faint(true)
 	numberStyle = lipgloss.NewStyle().Bold(true)
 	stopStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("214"))
@@ -51,8 +49,12 @@ type model struct {
 func newModel(cancel context.CancelFunc) model {
 	s := spinner.New(spinner.WithSpinner(spinner.MiniDot))
 	return model{
-		spin:   s,
-		bar:    progress.New(progress.WithDefaultGradient(), progress.WithWidth(40)),
+		spin: s,
+		bar: progress.New(
+			progress.WithSolidFill("63"),
+			progress.WithoutPercentage(),
+			progress.WithWidth(16),
+		),
 		start:  time.Now(),
 		cancel: cancel,
 		width:  80,
@@ -96,7 +98,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
-		m.bar.Width = min(msg.Width-6, 60)
+		// Shrink the bar on a narrow terminal so the rest of the line does not wrap.
+		m.bar.Width = min(max(m.width/4, 8), 16)
 	}
 	return m, nil
 }
@@ -114,32 +117,30 @@ func (m model) stop() model {
 }
 
 func (m model) View() string {
-	var b strings.Builder
-
 	head := m.spin.View()
 	if m.done {
 		head = "✓"
 	}
-	b.WriteString(fmt.Sprintf("\n %s %s\n\n", head, titleStyle.Render("xtract")))
-	b.WriteString(" " + m.bar.ViewAs(m.stats.Ratio()) + "\n\n")
 
-	b.WriteString(fmt.Sprintf(" %s of %s archives",
+	line := fmt.Sprintf(" %s %s %s/%s archives%s",
+		head,
+		m.bar.ViewAs(m.stats.Ratio()),
 		numberStyle.Render(fmt.Sprint(m.stats.Extracted)),
-		numberStyle.Render(fmt.Sprint(m.stats.Total))))
-	if r := m.stats.Remaining(); r > 0 {
-		b.WriteString(dimStyle.Render(fmt.Sprintf(" · %d to go", r)))
-	}
-	b.WriteString(dimStyle.Render(" · "+round(m.elapsed)) + "\n\n")
+		numberStyle.Render(fmt.Sprint(m.stats.Total)),
+		dimStyle.Render(" · "+round(m.elapsed)))
 
 	switch {
 	case m.done:
-		b.WriteString(dimStyle.Render(" done") + "\n")
+		line += dimStyle.Render(" · done")
 	case m.stopping:
-		b.WriteString(stopStyle.Render(" stopping — letting workers finish the file they're on") + "\n")
+		line += dimStyle.Render(" · ") + stopStyle.Render("stopping…")
 	default:
-		b.WriteString(dimStyle.Render(" ctrl+c to stop") + "\n")
+		// The hint is the first thing that wraps; drop it before the counts do.
+		if m.width >= 60 {
+			line += dimStyle.Render(" · ctrl+c to stop")
+		}
 	}
-	return b.String()
+	return line
 }
 
 // round trims a duration to something readable at a glance.
