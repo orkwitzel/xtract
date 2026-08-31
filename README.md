@@ -42,7 +42,7 @@ xtract [flags] <archive>...
       --max-files N   stop after this many extracted files (0 for no limit)
       --max-size N    stop after this many extracted bytes (0 for no limit)
       --no-tui        plain output instead of the progress display
-  -v, --verbose       print progress as plain lines
+      --verbose         print progress as plain lines
 ```
 
 Exit codes: `0` clean, `1` one or more archives failed, `2` misuse, `130` interrupted.
@@ -51,7 +51,7 @@ Exit codes: `0` clean, `1` one or more archives failed, `2` misuse, `130` interr
 
 ```
 ./testdata/make.sh                 # builds testdata/sample.zip
-./xtract -v testdata/sample.zip
+./xtract --verbose testdata/sample.zip
 ```
 
 The sample is five levels deep and mixes zip, tar.gz, 7z, tar.zst, tar.bz2 and

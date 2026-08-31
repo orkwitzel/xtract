@@ -16,7 +16,7 @@ go test ./internal/extractor -run TestRecursive -v
 
 ./testdata/make.sh              # (re)build the fixed sample archive
 ./testdata/random.sh -d 5       # a random tree, as deep and wide as you want
-./xtract -v testdata/sample.zip # try it; -v gives plain output, no TUI
+./xtract --verbose testdata/sample.zip # try it; --verbose gives plain output, no TUI
 
 .github/check-commits.sh        # commit subjects, the way CI checks them
 .github/next-version.sh         # the version your commits would release

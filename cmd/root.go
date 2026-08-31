@@ -83,7 +83,7 @@ archive with a misleading name or no extension at all is still found.`,
 		"stop after this many extracted bytes (0 for no limit)")
 	f.BoolVar(&noTUI, "no-tui", false,
 		"plain output instead of the progress display")
-	f.BoolVarP(&verbose, "verbose", "v", false,
+	f.BoolVar(&verbose, "verbose", false,
 		"print progress as plain lines (implies --no-tui)")
 
 	return cmd
